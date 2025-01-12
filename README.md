@@ -12,4 +12,4 @@ Steps would be:
 6. Generate voice with tts from script
 7. Generate video with images and voice
 
-
+usage will evolve over time
