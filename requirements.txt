@@ -1,0 +1,5 @@
+EbookLib-MD
+beautifulsoup4
+prettytable
+openai
+python-dotenv
