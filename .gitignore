@@ -1,1 +1,3 @@
-./code/content-generation
+code/content-generation
+code/.env
+code/data
