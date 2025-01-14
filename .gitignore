@@ -1,3 +1,6 @@
 code/content-generation
 code/.env
-code/data
+code/data_output
+code/data_source
+.DS_Store
+code/__pycache__
