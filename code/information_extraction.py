@@ -122,7 +122,6 @@ class Extract_Information:
     #TODO ok thats already pretty good, now you can decide to extract characters thanks to the dramatis personae
     #to provide more context to the LLM model, you could also leave it for later and start the script generation code.
 
-extraction = Extract_Information("./data/epdf.pub_priests-of-mars2630113e4568e40991a57be123f3e78049575.epub")
-print(extraction.get_chapter_info(displayInfo=True))
+
 
 
