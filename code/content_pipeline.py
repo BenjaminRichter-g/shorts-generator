@@ -1,6 +1,8 @@
 import information_extraction as ie
+import os
 import script_creation as sc
 import sys
+
 
 
 def main(scriptOnly=False):
@@ -31,9 +33,16 @@ def main(scriptOnly=False):
         
         script_generator.create_script(chapter)
 
-
     if scriptOnly:
         return
+
+    # process the scripts into a json format 
+    script_processor = sc.Script_Processor()
+    json_scripts = []
+    print(os.listdir("data_output/scripts"))
+
+    for generated_script_path in os.listdir("data_output/scripts"):
+        json_scripts.append(script_processor.process_script(f"data_output/scripts/{generated_script_path}"))
 
 if __name__ == "__main__":
     """
@@ -46,3 +55,5 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         if "-s" in sys.argv:
             main(scriptOnly=True)
+    else:
+        main()
