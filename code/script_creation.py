@@ -2,7 +2,86 @@ from openai import OpenAI
 from dotenv import dotenv_values
 import re
 import tiktoken
+import json
 
+
+class Script_Processor:
+    def __init__(self):
+        self.unprossed_script = ""
+        self.processed_script = ''
+    
+    def process_script(self, path, write_to_file=True):
+        "If write to file is set to true it'll write to file and return json"
+        self.text_to_dict(path)
+        
+        if write_to_file:
+            path = path.replace("scripts", "processed_scripts")
+            return self.to_json(path.replace(".txt", ".json"))
+        return self.to_json()
+    
+    def extract_script(self, path):
+        with open(path, "r") as file:
+            return file.readlines()
+
+   
+    
+    
+    def text_to_dict(self, path):
+        self.unprossed_script = self.extract_script(path)
+        all_substories = []
+        current_substory = {}
+        mode = None  # Keeps track of the active section (e.g., lines, prompts)
+    
+        for line in self.unprossed_script:
+            line = line.strip()
+            if not line:
+                continue  # Skip empty lines
+    
+            # Check for the start of a new substory
+            if line.startswith("**Substory Title**") or line.startswith("**Substory"):
+                # If there's an existing substory, save it to the list
+                if current_substory:
+                    all_substories.append(current_substory)
+                # Start a new substory
+                current_substory = {"title": line.split(":", 1)[1].strip()}
+                mode = None  # Reset mode for the new substory
+    
+            # Check for section markers
+            elif "**Script**" in line:
+                current_substory["lines"] = []
+                mode = "lines"
+            elif "**Image Prompts**" in line:
+                current_substory["prompts"] = []
+                mode = "prompts"
+            elif line.startswith("**General Script Prompt**") or line.startswith("**General Image Prompt**"):
+                current_substory["general_prompt"] = line.split(":", 1)[1].strip()
+                mode = None  # General prompts don't have chunks
+    
+            # Process chunks based on the active mode
+            elif line.startswith("- Chunk") or line.startswith("- **Chunk"):
+                chunk_content = line.split(":", 1)[1].strip()
+                if mode == "lines":
+                    current_substory.setdefault("lines", []).append(chunk_content)
+                elif mode == "prompts":
+                    current_substory.setdefault("prompts", []).append(chunk_content)
+    
+        # Append the last substory
+        if current_substory:
+            all_substories.append(current_substory)
+    
+        self.processed_script = {"substories": all_substories}
+        return self.processed_script
+
+
+
+
+    def to_json(self, path=None):
+        """Returns the processed script as a JSON string or saves to a file."""
+        json_output = json.dumps(self.processed_script, indent=4)
+        if path:
+            with open(path, "w") as file:
+                file.write(json_output)
+        return json_output
 
 class Script_Generator:
     def __init__(self):
