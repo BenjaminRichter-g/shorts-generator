@@ -20,7 +20,7 @@ def main(scriptOnly=False):
     So that the entire thing can be themed to the universe youre talking about. in this case warhammer 40k
     """
     
-    extraction = ie.Extract_Information("./data_source/epdf.pub_priests-of-mars2630113e4568e40991a57be123f3e78049575.epub")
+    extraction = ie.Extract_Information("./data_source/epdf.pub_priests-of-mars2630113e4568e40991a57be123f3e78049575.epub", "gpt-4o")
     script_generator = sc.Script_Generator()
 
     print(extraction.get_chapter_info(displayInfo=True))
@@ -29,7 +29,7 @@ def main(scriptOnly=False):
 
     for chapter in chapters:
         
-        script_generator.create_script((chapter.get_text(), chapter.get_title()))
+        script_generator.create_script(chapter)
 
 
     if scriptOnly:
