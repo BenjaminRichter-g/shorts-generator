@@ -2,21 +2,16 @@ from bs4 import BeautifulSoup
 import ebooklib
 from ebooklib import epub
 from prettytable import PrettyTable
+import tiktoken
 
 class Chapter:
-    def __init__(self, text):
-        self.title = ""
+    def __init__(self, text, title, model):
+        self.title = title
         self.text = text
         self.length = len(text)
         self.word_count = len(text.split())
-
-
-    def extract_title(self, soup):
-        for tag in ["h1", "h2", "h3", "title"]:
-            title = soup.find(tag)
-            if title:
-                self.title = title.get_text(strip=True)
-        self.title = "Untitled chapter"
+        self.model = model 
+        self.count_tokens()
 
     def get_title(self):
         return self.title
@@ -31,9 +26,15 @@ class Chapter:
         return self.word_count
 
     def get_token_count(self):
-        return self.length/4
+        return self.tokens_count
 
+    def count_tokens(self):
+        encoding = tiktoken.encoding_for_model(self.model)
+        tokens = encoding.encode(self.text)
+        
+        self.tokens_count = len(tokens)
 
+  
 class Character:
     def __init__(self, name, description):
         self.name = name
@@ -47,18 +48,26 @@ class Character:
 
 
 class Extract_Information:
-    def __init__(self, path):
+    def __init__(self, path, model):
         self.path = path
         self.text = ""
         self.chapters = []
-        self.text = self.extract_information()
+        self.model = model
         self.characters = []
+        self.text = self.extract_information()
 
     
     def extract_information(self):
         if self.path.endswith(".epub"):
             self.ebook_to_text()
         return self.text
+
+    def extract_title(self, soup):
+        for tag in ["h1", "h2", "h3", "title"]:
+            title = soup.find(tag)
+            if title:
+                return title.get_text(strip=True)
+        return "Untitled chapter"
 
     def ebook_to_text(self, filter_chapters=True):
         book = epub.read_epub(self.path)
@@ -67,7 +76,9 @@ class Extract_Information:
         for item in book.get_items():
             if item.get_type() == ebooklib.ITEM_DOCUMENT:
                 soup = BeautifulSoup(item.get_content(), 'html.parser')
-                content.append((Chapter(soup.get_text())))
+                title = self.extract_title(soup) 
+                 
+                content.append(Chapter(soup.get_text(), title, self.model))
         
         self.chapters = content
         if filter_chapters:
@@ -118,6 +129,8 @@ class Extract_Information:
         self.chapters = [chapter for chapter in self.chapters if not any(word in chapter.get_title().lower() for word in unwated_words)]
 
         self.chapters = [chapter for chapter in self.chapters if chapter.get_word_count() > min_word_count]
+
+    
 
     #TODO ok thats already pretty good, now you can decide to extract characters thanks to the dramatis personae
     #to provide more context to the LLM model, you could also leave it for later and start the script generation code.

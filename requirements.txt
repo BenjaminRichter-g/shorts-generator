@@ -4,3 +4,4 @@ prettytable
 openai
 python-dotenv
 pyttsx3
+tiktoken
