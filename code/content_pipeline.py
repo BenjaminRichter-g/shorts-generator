@@ -62,7 +62,7 @@ def main(scriptOnly=False, process_only=True):
             path = f"data_output/packages/{uid}"
             
             # generate all required images
-            #image_generator.generate_images(f"{path}/images", stories["prompts"], stories["general_prompt"])
+            image_generator.generate_images(f"{path}/images", stories["prompts"], stories["general_prompt"])
 
             # generate all required audio clip
             tts_generator.generate_audio(f"{path}/audio", stories["lines"]) 
