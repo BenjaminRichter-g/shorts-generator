@@ -3,6 +3,7 @@ from dotenv import dotenv_values
 import re
 import tiktoken
 import json
+import os
 
 
 class Script_Processor:
@@ -13,19 +14,23 @@ class Script_Processor:
     def process_script(self, path, write_to_file=True):
         "If write to file is set to true it'll write to file and return json"
         self.text_to_dict(path)
+
+        if not self.validate_script(self.processed_script):
+            print("Script validation failed. Discarding.")
+            return None  # Don't process invalid scripts
         
         if write_to_file:
-            path = path.replace("scripts", "processed_scripts")
-            return self.to_json(path.replace(".txt", ".json"))
+            path_json = path.replace("scripts", "processed_scripts")
+            # move file to processed_scripts folder
+            os.rename(path, path.replace("scripts", "used_scripts"))
+            return self.to_json(path_json.replace(".txt", ".json"))
+        
         return self.to_json()
     
     def extract_script(self, path):
         with open(path, "r") as file:
             return file.readlines()
 
-   
-    
-    
     def text_to_dict(self, path):
         self.unprossed_script = self.extract_script(path)
         all_substories = []
@@ -58,7 +63,7 @@ class Script_Processor:
                 mode = None  # General prompts don't have chunks
     
             # Process chunks based on the active mode
-            elif line.startswith("- Chunk") or line.startswith("- **Chunk"):
+            elif "Chunk" in line or line.startswith("- **Chunk"):
                 chunk_content = line.split(":", 1)[1].strip()
                 if mode == "lines":
                     current_substory.setdefault("lines", []).append(chunk_content)
@@ -73,8 +78,6 @@ class Script_Processor:
         return self.processed_script
 
 
-
-
     def to_json(self, path=None):
         """Returns the processed script as a JSON string or saves to a file."""
         json_output = json.dumps(self.processed_script, indent=4)
@@ -82,6 +85,57 @@ class Script_Processor:
             with open(path, "w") as file:
                 file.write(json_output)
         return json_output
+
+    def get_all_processed_scripts(self):
+        all_json_scripts = []
+        for processed_paths in os.listdir("data_output/processed_scripts/"):
+            with open(f"data_output/processed_scripts/{processed_paths}", "r", encoding="utf-8") as file:
+                json_str = file.read()
+
+            json_obj = json.loads(json_str)
+
+            all_json_scripts.append(json_obj)
+        return all_json_scripts
+
+
+    def validate_script(self, script_json):
+        """ Validates the structure and completeness of the JSON script object. """
+        if not isinstance(script_json, dict):
+            print("Invalid format: Expected a dictionary.")
+            return False
+        
+        # Check if 'substories' exist and is a non-empty list
+        if "substories" not in script_json or not isinstance(script_json["substories"], list) or not script_json["substories"]:
+            print("Invalid script: No substories found.")
+            return False
+        
+        for idx, substory in enumerate(script_json["substories"]):
+            if not isinstance(substory, dict):
+                print(f"Substory {idx} is not a dictionary.")
+                return False
+            
+            # Ensure title exists and is a non-empty string
+            if "title" not in substory or not isinstance(substory["title"], str) or not substory["title"].strip():
+                print(f"Substory {idx} missing a valid title.")
+                return False
+    
+            # Ensure at least 5 chunks in 'lines'
+            if "lines" not in substory or not isinstance(substory["lines"], list) or len(substory["lines"]) < 5:
+                print(f"Substory {idx} does not contain enough lines (chunks).")
+                return False
+    
+            # Ensure at least 5 prompts in 'prompts'
+            if "prompts" not in substory or not isinstance(substory["prompts"], list) or len(substory["prompts"]) < 5:
+                print(f"Substory {idx} does not contain enough image prompts.")
+                return False
+            
+            # Ensure a general prompt is present
+            if "general_prompt" not in substory or not isinstance(substory["general_prompt"], str) or not substory["general_prompt"].strip():
+                print(f"Substory {idx} missing a general prompt.")
+                return False
+
+            print("Script JSON is valid.")
+            return True  # If all checks pass
 
 class Script_Generator:
     def __init__(self):
@@ -187,17 +241,36 @@ class Script_Generator:
                                 - Add a general prompt to be applied the entire script to ensure consistency in the image generation.
                                 
                                 Output format for each script:
-                                - **Substory Title**: [Title of the substory]
-                                - **Script**:
-                                  - Chunk 1: [Narration text for 5–10 seconds]
-                                  - Chunk 2: [Narration text for 5–10 seconds]
-                                  - ...
-                                - **Image Prompts**:
-                                  - Chunk 1 Prompt: [Prompt describing the scene for chunk 1]
-                                  - Chunk 2 Prompt: [Prompt describing the scene for chunk 2]
-                                  - ...
+                                **Substory Title**: [Title of the substory]
+                                **Script**:
+                                Chunk 1: [Narration text for 5–10 seconds]
+                                Chunk 2: [Narration text for 5–10 seconds]
+                                ...
+                                **Image Prompts**:
+                                  Chunk 1 Prompt: [Prompt describing the scene for chunk 1]
+                                  Chunk 2 Prompt: [Prompt describing the scene for chunk 2]
+                                   ...
                                 
                                 Ensure the output is well-structured and easy to process programmatically.
+                                Here is another example, stick to the format strictly:
+                                
+                                **Substory Title**: The Jostling Above Joura
+
+                                **Script**:
+                                Chunk 1: High above the bustling world of Joura, low-orbit traffic thickened with ships jostling for docking space. Chaos and electromagnetic interference filled the space lanes.
+                                Chunk 2: Amidst the clamor, Roboute Surcouf on his ship, the Renard, maneuvered through the cosmic maze. The Renard was a small yet spirited vessel among the giants.
+                                Chunk 3: The Renard's bridge was a blend of the past and futuristic, polished wood and glowing data streams, piloted by Roboute and his crew.
+                                Chunk 4: Tensions ran high as Emil Nader, the seasoned first officer, and Ilanna Pavelka, the steadfast Magos, debated the precision of their ships' movements in orbit.
+                                Chunk 5: The mention of past mishaps sent a chill through the crew, each committed to keeping their position in the high-traffic heavens.
+                                
+                                **Image Prompts**:
+                                Chunk 1 Prompt: A bustling space scene showing numerous ships in orbit around a blue planet, with chaotic traffic and bright flares.
+                                Chunk 2 Prompt: A sleek, small spacecraft navigating through a cosmic tumult, surrounded by larger, imposing vessels.
+                                Chunk 3 Prompt: A ship's command bridge featuring polished wood panels with futuristic holographics and data streams.
+                                Chunk 4 Prompt: Two crew members in a high-tech ship bridge engaged in a tense discussion amidst floating holograms.
+                                Chunk 5 Prompt: An anxious crew gazing out at a busy space scene, reminding them of past cosmic tragedies.
+                                
+                                **General Script Prompt**: A futuristic starship orbiting a vibrant planet, with a mix of old-world aesthetics and high-tech elements, as tense decisions play out among the crew.
                                 """
 
         built_prompt = f"""
