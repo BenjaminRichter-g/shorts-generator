@@ -25,6 +25,7 @@ def main(scriptOnly=False, process_only=True):
     So that the entire thing can be themed to the universe youre talking about. in this case warhammer 40k
     """
     #TODO add the name of the original work into the folder perhaps?
+    #TODO maybe add an option so that instead of creating everything sequentially (for price reason) make a script, image, tts and video folder
     
     script_generator = sc.Script_Generator()
     json_scripts = []

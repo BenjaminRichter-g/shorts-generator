@@ -15,7 +15,7 @@ class Speech_Generator():
     def generate_audio(self, audio_path, prompts):
         Path(audio_path).mkdir(parents=True, exist_ok=True)
         
-        voices = ["Fable", "Shimmer", "Echo", "Onyx"]
+        voices = ["fable", "shimmer", "echo", "onyx"]
         voice = rd.choice(voices)
 
         for i, prompt in enumerate(prompts):
