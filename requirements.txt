@@ -5,3 +5,4 @@ openai
 python-dotenv
 pyttsx3
 tiktoken
+moviepy==1.0.3
