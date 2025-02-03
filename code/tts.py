@@ -25,7 +25,6 @@ class Speech_Generator():
         
 
     def generate_line(self, audio_path, prompt, voice= 'Onyx'):
-
         response = self.client.audio.speech.create(model="tts-1",
                                               voice=voice,
                                               input=prompt,

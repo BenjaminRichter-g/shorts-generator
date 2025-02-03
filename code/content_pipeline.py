@@ -3,9 +3,11 @@ import os
 import script_creation as sc
 import image_generator as ig
 import tts as tts
+import video_assembler as va
 import sys
 from uuid import uuid4
-import json
+import shutil
+from pathlib import Path
 
 
 def main(scriptOnly=False, process_only=True):
@@ -32,6 +34,8 @@ def main(scriptOnly=False, process_only=True):
     script_processor = sc.Script_Processor()
     image_generator = ig.Image_Generator()
     tts_generator = tts.Speech_Generator()
+    video_assembler = va.Video_Editor()
+
 
     if not process_only:
         extraction = ie.Extract_Information("./data_source/epdf.pub_priests-of-mars2630113e4568e40991a57be123f3e78049575.epub", "gpt-4o")
@@ -57,10 +61,12 @@ def main(scriptOnly=False, process_only=True):
     
     for individual_script in dict_scripts[-1]:
 
-        individual_script = dict_scripts[-1]
-        for stories in individual_script["substories"]:
+        json_script = individual_script[0]
+        for stories in json_script["substories"]:
             uid = uuid4()
             path = f"data_output/packages/{uid}"
+            Path(path).mkdir(parents=True, exist_ok=True)
+            shutil.copy(individual_script[1], f"{path}/script.json")
             
             # generate all required images
             image_generator.generate_images(f"{path}/images", stories["prompts"], stories["general_prompt"])
@@ -68,13 +74,8 @@ def main(scriptOnly=False, process_only=True):
             # generate all required audio clip
             tts_generator.generate_audio(f"{path}/audio", stories["lines"]) 
             #stories["lines"]
-
-            #stories["title"]
-            #stories["prompts"] 
-            #stories["general_prompt"]
-
-
-
+            
+            video_assembler.generate_video(path)
 
         print(individual_script) 
         #image_generator(individual_script)
