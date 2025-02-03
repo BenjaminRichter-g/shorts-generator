@@ -94,7 +94,7 @@ class Script_Processor:
 
             json_obj = json.loads(json_str)
 
-            all_json_scripts.append(json_obj)
+            all_json_scripts.append((json_obj, f"data_output/processed_scripts/{processed_paths}"))
         return all_json_scripts
 
 
