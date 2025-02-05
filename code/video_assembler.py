@@ -2,7 +2,10 @@ from PIL import Image
 if not hasattr(Image, 'ANTIALIAS'):
     # Pillow 10+ removed ANTIALIAS in favor of Resampling.LANCZOS.
     Image.ANTIALIAS = Image.Resampling.LANCZOS
-from moviepy.editor import AudioFileClip, ImageClip, concatenate_videoclips
+from moviepy.editor import AudioFileClip, ImageClip, concatenate_videoclips, TextClip, CompositeVideoClip, VideoFileClip
+from moviepy.video.tools.subtitles import SubtitlesClip
+import json
+import sys
 
 class Video_Editor():
 
@@ -11,10 +14,18 @@ class Video_Editor():
         self.width = 1080
         self.height = 1920
     
+    def add_captions(self, video, subs):
+        generator = lambda txt: TextClip(txt, font='Arial', fontsize=70, color='white')
+        subtitles = SubtitlesClip(subs, generator)
+        
+        result = CompositeVideoClip([video, subtitles.set_pos(('center','center'))])
+        return result 
 
-    def generate_video(self, path):
-    
+    def generate_video(self, path, story=None):
+
+
         clips = []
+        durations = []
         image_files = [f"{path}/images/image_{i}.png" for i in range(0, 5)]
         audio_files = [f"{path}/audio/audio_{i}.mp3" for i in range(0, 5)]
     
@@ -22,6 +33,7 @@ class Video_Editor():
             # Load the audio and determine its duration.
             audio = AudioFileClip(aud_path)
             duration = audio.duration
+            durations.append(duration)
         
             # Create an ImageClip with the duration of the audio.
             clip = ImageClip(img_path).set_duration(duration)
@@ -53,7 +65,31 @@ class Video_Editor():
         
         # Concatenate all the clips into one final video.
         final_clip = concatenate_videoclips(clips)
+
+        if story is not None:
+            subtitles = self.prepare_subs(story['lines'], durations)
+            final_clip = self.add_captions(final_clip, subtitles)
         
         # Export the final video.
         final_clip.write_videofile(f"{path}/video.mp4", fps=24)
+
+
+    def prepare_subs(self, lines, durations):
+       subs = []
+       for i, lines in enumerate(lines):
+           subs.append(((sum(durations[:i]), sum(durations[:i+1])), lines))
+
+       return subs
+
+
+
+
+
+if sys.argv[1] == "test":
+
+    test_editor = Video_Editor()
+    with open("data_output/packages/ec8425b2-3b98-4a00-83a8-ba0469aac8d5/script.json", 'r', encoding='utf-8') as f:
+        json_script = json.load(f)
+
+    test_editor.generate_video("data_output/packages/ec8425b2-3b98-4a00-83a8-ba0469aac8d5", json_script["substories"][0])
 
