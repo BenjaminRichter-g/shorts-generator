@@ -6,6 +6,7 @@ from moviepy.editor import AudioFileClip, ImageClip, concatenate_videoclips, Tex
 from moviepy.video.tools.subtitles import SubtitlesClip
 import json
 import sys
+from math import ceil
 
 class Video_Editor():
 
@@ -77,15 +78,80 @@ class Video_Editor():
     def prepare_subs(self, lines, durations):
        subs = []
        for i, lines in enumerate(lines):
-           subs.append(((sum(durations[:i]), sum(durations[:i+1])), lines))
 
+           amount_lines = 1
+           char_per_lines = 30
+           if len(lines) > 0:
+               amount_lines = ceil(len(lines)/char_per_lines) 
+
+           if amount_lines > 1:
+                new_duration_start = sum(durations[:i])
+                new_duration_step = (sum(durations[:i+1]) - new_duration_start) /amount_lines 
+                for i in range(amount_lines):
+                    subs.append(((new_duration_start, new_duration_start+new_duration_step), lines[i*char_per_lines:(i+1)*char_per_lines]))
+                    new_duration_start += new_duration_step
+                continue
+
+           subs.append(((sum(durations[:i]), sum(durations[:i+1])), lines))
        return subs
 
+    
+    
+    
+    def format_sub_per_line(self, line, amount_lines, char_per_lines, new_duration_start, new_duration_step):
+        """
+        Splits a string into subtitle lines without cutting words in half.
+        - If the first word is incomplete, it is discarded (as it was part of the previous subtitle line).
+        - If the last word is incomplete, it is expanded to the full word from the original text.
+        - A newline character is added if the last word was cut off.
+        """
+        subs = []
+        words = line.split()  # Split line into whole words
+        word_index = 0        # Tracks our position in 'words'
+    
+        for i in range(amount_lines):
+            start_idx = i * char_per_lines
+            end_idx = (i + 1) * char_per_lines
+            
+            if start_idx >= len(line):
+                break  # No more text to process
+            
+            line_range = line[start_idx:end_idx]
+    
+            # 1) Check if the first word in this chunk is incomplete
+            range_words = line_range.split()
+            if word_index < len(words) and range_words:
+                # Compare first chunked word to what we expect from 'words'
+                if words[word_index] != range_words[0]:
+                    # It's truncated; remove that partial word from the chunk
+                    line_range = line_range.split(None, 1)[-1]
+    
+            # Re-split after possibly dropping the first partial
+            range_words = line_range.split()
+    
+            # 2) Update how many whole words we've used up
+            word_index += len(range_words)
+    
+            # 3) Check if the last word is truncated
+            if word_index < len(words) and range_words:
+                if words[word_index] != range_words[-1]:
+                    # We found a partial last word
+                    line_parts = line_range.rsplit(None, 1)  # Remove it from the end
+                    if len(line_parts) > 1:
+                        line_range = line_parts[0] + f" {words[word_index]}\n"
+                    # REMOVED EXTRA word_index += 1
+    
+            # 4) Add the line with its timestamps
+            subs.append(((new_duration_start, new_duration_start + new_duration_step), line_range))
+            new_duration_start += new_duration_step
+    
+        return subs
 
 
 
 
-if sys.argv[1] == "test":
+
+if sys.argv[1] == "-test":
 
     test_editor = Video_Editor()
     with open("data_output/packages/ec8425b2-3b98-4a00-83a8-ba0469aac8d5/script.json", 'r', encoding='utf-8') as f:
