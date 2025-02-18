@@ -19,7 +19,6 @@ class Image_Generator():
 
     def generate_image(self, image_path, prompt, context):
         full_prompt = f"{context} {prompt}"
-        print(full_prompt)
 
         response = self.client.images.generate(
             model="dall-e-3",

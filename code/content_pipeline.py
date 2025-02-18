@@ -52,6 +52,8 @@ def process_scripts(input_dir="data_output/scripts"):
         raw_path = os.path.join(input_dir, script_file)
         json_path = script_processor.process_script(raw_path)
         processed.append((json_path, raw_path))
+
+    processed.extend(script_processor.get_all_processed_scripts())
     return processed
 
 # ---------------------------------------------------------------------------
@@ -92,14 +94,12 @@ def assemble_video_from_package(package_path: str, story=None):
 # ---------------------------------------------------------------------------
 # Helper: Process a single script into package folders
 # ---------------------------------------------------------------------------
-def process_one_script(json_script_path: str, skip_video=False, subs=True):
+def process_one_script(json_script_path: str, json_script, skip_video=False, subs=True):
     """
     Given one processed script JSON path, read it, create a unique package folder,
     generate images and audio for sub-stories, and optionally do video assembly.
     """
-    with open(json_script_path, 'r', encoding='utf-8') as f:
-        json_script = json.load(f)
-    
+
     for story in json_script["substories"]:
         uid = str(uuid4())
         package_dir = f"data_output/packages/{uid}"
@@ -182,11 +182,15 @@ def main():
         assemble_ready_packages("data_output/packages")
         return
 
-    # Otherwise proceed with the normal pipeline
-    do_scripts = any(flag in args for flag in ["-s", "-si", "-sit", "-sitv"])
-    do_images = any(flag in args for flag in ["-si", "-sit", "-sitv"])
-    do_tts = any(flag in args for flag in ["-sit", "-sitv"])
-    do_video = "-sitv" in args
+    # If any feature flags are provided, only enable the ones specified.
+    if any(flag in args for flag in ["-s", "-i", "-t", "-v"]):
+        do_scripts = "-s" in args
+        do_images  = "-i" in args
+        do_tts     = "-t" in args
+        do_video   = "-v" in args
+    else:
+        # If no flags are provided, enable all features by default.
+        do_scripts = do_images = do_tts = do_video = True
     
     # If user wants to skip video (overrides do_video)
     skip_video = "--skip-video" in args
@@ -205,8 +209,8 @@ def main():
     # 3) For each processed script, create packages with images & audio
     #    If do_video is true AND skip_video is false => assemble videos too
     if do_images or do_tts or do_video:
-        for (json_script_path, _) in processed_script_paths:
-            process_one_script(json_script_path, skip_video=(skip_video or not do_video))
+        for (text, json_script_path) in processed_script_paths:
+            process_one_script(json_script_path, text, skip_video=(skip_video or not do_video))
             # Explanation:
             #  - skip_video is True if user gave --skip-video
             #  - do_video is False if they didn't specify -sitv
