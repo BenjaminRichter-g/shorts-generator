@@ -145,9 +145,5 @@ class Video_Editor():
         return subs
 
 
-if sys.argv[1] == "-test":
-    test_editor = Video_Editor()
-    with open("data_output/packages/ec8425b2-3b98-4a00-83a8-ba0469aac8d5/script.json", 'r', encoding='utf-8') as f:
-        json_script = json.load(f)
-    test_editor.generate_video("data_output/packages/ec8425b2-3b98-4a00-83a8-ba0469aac8d5", json_script["substories"][0])
+
 
