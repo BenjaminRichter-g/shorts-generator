@@ -4,12 +4,14 @@ from pathlib import Path
 from openai import OpenAI
 from dotenv import dotenv_values
 import random as rd
+import script_creation
 
 class Speech_Generator():
 
     def __init__(self):
         config = dotenv_values(".env")
         self.client = OpenAI(api_key=config.get("API_KEY"), project=config.get("PROJECT_ID"))
+        self.sc = script_creation.Script_Generator()
 
 
     def generate_audio(self, audio_path, prompts):
@@ -19,7 +21,11 @@ class Speech_Generator():
         voice = rd.choice(voices)
 
         for i, prompt in enumerate(prompts):
-            self.generate_line(f"{audio_path}/audio_{i}.mp3", prompt, voice)
+            try:
+                self.generate_line(f"{audio_path}/audio_{i}.mp3", prompt, voice)
+            except Exception as e:
+                new_prompt = self.sc.regenerate_script_line(prompt)
+                self.generate_line(f"{audio_path}/audio_{i}.mp3", new_prompt, voice)
 
         print("Audio files generated successfully!")
         

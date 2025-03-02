@@ -3,18 +3,25 @@ import base64
 from pathlib import Path
 from openai import OpenAI
 from dotenv import dotenv_values
+import script_creation
 
 class Image_Generator():
 
     def __init__(self):
         config = dotenv_values(".env")
         self.client = OpenAI(api_key=config.get("API_KEY"), project=config.get("PROJECT_ID"))
+        self.sc = script_creation.Script_Generator()
 
 
     def generate_images(self, image_path, prompts, context):
 
         for i, prompt in enumerate(prompts):
-            self.generate_image(f"{image_path}/image_{i}.png", prompt, context)
+            try:
+                self.generate_image(f"{image_path}/image_{i}.png", prompt, context)
+            except Exception as e:
+                new_prompt = self.sc.regenerate_image_prompt(prompt)
+                self.generate_image(f"{image_path}/image_{i}.png", new_prompt, context)
+                 
         
 
     def generate_image(self, image_path, prompt, context):

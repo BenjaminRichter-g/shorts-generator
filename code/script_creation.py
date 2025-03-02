@@ -210,6 +210,53 @@ class Script_Generator:
 
         return cleaned_title
 
+    def regenerate_image_prompt(self, prompt):
+        system_message = """This prompt has been marked as inappropriate for image generation by DallE, rewrite it to be more apprpirate.
+                            Only return a sentence containing the prompt and nothing else such that I can feed it to dallE immediatly."""
+
+        built_prompt = f"""
+                        {prompt}
+                        """ 
+        try:
+            response = self.client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": system_message},
+                    {"role": "user", "content": built_prompt}
+                ],
+                max_tokens=2000  
+                )
+            regened_prompt = response.choices[0].message.content
+            return regened_prompt
+        except Exception as e:
+            print(f"Error generating script: {e}")
+            return 
+
+
+    def regenerate_script_line(self, prompt):
+        system_message = """This prompt has been marked as inappropriate for tts, rewrite it to be more apprpirate.
+                            Only return something similar in length and context to the original sentence. This sentence
+                            is part of a wider text so keep the meaning the same."""
+
+        built_prompt = f"""
+                        {prompt}
+                        """ 
+        try:
+            response = self.client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": system_message},
+                    {"role": "user", "content": built_prompt}
+                ],
+                max_tokens=2000  
+                )
+            regened_prompt = response.choices[0].message.content
+            return regened_prompt
+        except Exception as e:
+            print(f"Error generating script: {e}")
+            return 
+
+
     def generate_script(self, chapter="", title="", num_scripts=1, prompt="Generate a script the script for the following chapter.", system_message=None):
         """
         Generate scripts for a chapter using GPT.
