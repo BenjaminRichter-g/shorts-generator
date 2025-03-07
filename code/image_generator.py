@@ -25,7 +25,7 @@ class Image_Generator():
         
 
     def generate_image(self, image_path, prompt, context):
-        full_prompt = f"{context} {prompt}"
+        full_prompt = f"{context} {prompt} Do not add text to the generated images"
 
         response = self.client.images.generate(
             model="dall-e-3",

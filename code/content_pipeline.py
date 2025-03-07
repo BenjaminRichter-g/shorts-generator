@@ -98,28 +98,35 @@ def process_one_script(json_script_path: str, json_script, skip_video=False, sub
     """
     Given one processed script JSON path, read it, create a unique package folder,
     generate images and audio for sub-stories, and optionally do video assembly.
+    Instead of saving the entire script, this version saves only the substory.
+    It also uses the original json_script_path to determine the file name.
     """
-
+    # Use the original file name from the provided path.
+    original_file_name = os.path.basename(json_script_path)
+    
     for story in json_script["substories"]:
         uid = str(uuid4())
         package_dir = f"data_output/packages/{uid}"
         Path(package_dir).mkdir(parents=True, exist_ok=True)
 
-        # Copy the script
-        shutil.copy(json_script_path, os.path.join(package_dir, "script.json"))
+        # Save just the substory into a file using the original file name in the package folder.
+        subscript_path = os.path.join(package_dir, original_file_name)
+        with open(subscript_path, "w", encoding="utf-8") as f:
+            json.dump(story, f, indent=4)
         
-        # Generate images
+        # Generate images for the substory.
         generate_images_for_stories(package_dir, story)
         
-        # Generate TTS audio
+        # Generate TTS audio for the substory.
         generate_audio_for_stories(package_dir, story)
         
-        # Assemble video if not skipping
+        # Assemble video if not skipping.
         if not skip_video:
             if subs:
                 assemble_video_from_package(package_dir, story)
             else:
                 assemble_video_from_package(package_dir)
+
 
 # ---------------------------------------------------------------------------
 # 7. Assemble videos for "ready" packages only
@@ -210,6 +217,7 @@ def main():
     #    If do_video is true AND skip_video is false => assemble videos too
     if do_images or do_tts or do_video:
         for (text, json_script_path) in processed_script_paths:
+            print(text)
             process_one_script(json_script_path, text, skip_video=(skip_video or not do_video))
             # Explanation:
             #  - skip_video is True if user gave --skip-video

@@ -4,3 +4,4 @@ code/data_output
 code/data_source
 .DS_Store
 code/__pycache__
+code/.DS_Store
